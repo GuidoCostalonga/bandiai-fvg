@@ -48,6 +48,27 @@ pnpm db:seed                 # popola il registro sorgenti + tag
 
 Per ispezionare i dati: `pnpm prisma:studio`.
 
+### Ricerca semantica (pgvector)
+
+Il `docker-compose.yml` usa l'immagine `pgvector/pgvector:pg16`, che include l'estensione
+`vector`. La migrazione crea automaticamente l'estensione e la colonna `embedding`.
+Dopo la migrazione, crea l'indice ANN (opzionale ma consigliato per le prestazioni):
+
+```bash
+pnpm prisma db execute --file prisma/sql/002_vector_index.sql --schema prisma/schema.prisma
+```
+
+Imposta una chiave per gli embedding in `.env` (`EMBEDDING_API_KEY` o `OPENAI_API_KEY`).
+Senza chiave, la ricerca AI ripiega automaticamente sulla ricerca full-text.
+Per indicizzare bandi già presenti:
+
+```bash
+pnpm embed:backfill
+```
+
+> Se usi un PostgreSQL esterno, assicurati che pgvector sia installato
+> (`CREATE EXTENSION vector;`). Neon e Supabase lo supportano nativamente.
+
 ## 5. Avvia l'applicazione
 
 ```bash

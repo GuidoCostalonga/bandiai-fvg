@@ -3,6 +3,16 @@
 Tutte le modifiche rilevanti a questo progetto. Formato ispirato a
 [Keep a Changelog](https://keepachangelog.com/) · versioning [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Ricerca semantica** con pgvector: colonna `embedding vector(1536)`, modulo
+  `src/lib/ai/embeddings.ts` (OpenAI-compatible), `src/lib/bandi/semantic.ts` con ranking
+  per distanza coseno e filtri in-DB, endpoint `GET /api/search` con fallback automatico
+  alla ricerca full-text, toggle "Ricerca AI" nell'interfaccia, indicizzazione automatica
+  in fase di crawl, indice ANN HNSW (`prisma/sql/002_vector_index.sql`) e comando
+  `pnpm embed:backfill` per i bandi preesistenti. Immagine Postgres → `pgvector/pgvector:pg16`.
+
 ## [0.1.0] — 2026-07-09
 
 ### Added

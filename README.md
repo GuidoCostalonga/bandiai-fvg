@@ -19,7 +19,7 @@ riassume** e ti **avvisa** se è compatibile con il tuo profilo.
 | **Crawler multi-sorgente** | Parser dedicati, PDF/DOC/XLS/HTML/RSS/sitemap/API, headless Playwright per JS & Cloudflare, retry, rate-limiting, queue, cache, dedup, versioning |
 | **AI extraction** | Estrae 25+ campi strutturati da ogni bando (importi, scadenze, beneficiari, spese, procedura…) |
 | **Classificazione AI** | 30 categorie (Imprese, Sport, Terzo Settore, PNRR, Ambiente…) |
-| **Ricerca** | Full-text + filtri (importo, scadenza, categoria, territorio, ente, solo aperti/FVG/EU/PNRR) |
+| **Ricerca** | Full-text + **semantica AI (pgvector)** + filtri (importo, scadenza, categoria, territorio, ente, solo aperti/FVG/EU/PNRR) |
 | **Area AI per bando** | Riassunto semplice, checklist, FAQ, errori da evitare, probabilità di successo, timeline |
 | **Assistente AI** | Chat che risponde "Posso partecipare?", "Fammi la checklist", "Spiegamelo come a un 14enne" |
 | **Notifiche** | Email, Telegram, Discord, Slack, Webhook, Push, WhatsApp — solo per bandi compatibili |
@@ -125,6 +125,7 @@ bandiai-fvg/
 | Metodo | Endpoint | Descrizione |
 |--------|----------|-------------|
 | `GET`  | `/api/bandi` | Lista paginata + filtri |
+| `GET`  | `/api/search` | Ricerca **semantica** AI (fallback full-text) |
 | `GET`  | `/api/bandi/:slug` | Dettaglio bando + Area AI |
 | `POST` | `/api/ai/chat` | Assistente AI (auth) |
 | `GET/PUT` | `/api/profile` | Profilo utente (auth) |

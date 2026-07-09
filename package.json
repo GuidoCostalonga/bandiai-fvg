@@ -23,6 +23,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "worker": "tsx src/lib/queue/worker.ts",
     "crawl": "tsx src/crawler/cli.ts",
+    "embed:backfill": "tsx src/lib/ai/embed-backfill.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

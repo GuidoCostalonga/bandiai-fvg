@@ -34,6 +34,26 @@ curl "http://localhost:3000/api/bandi?onlyOpen=true&categories=SPORT&categories=
 }
 ```
 
+### Ricerca semantica AI
+
+```bash
+curl "http://localhost:3000/api/search?q=aiuti%20per%20aprire%20un%20birrificio%20artigianale&onlyOpen=true"
+```
+
+```json
+{
+  "mode": "semantic",
+  "total": 12,
+  "items": [
+    { "slug": "...", "title": "Contributi per micro-imprese artigiane alimentari", "score": 0.83, "...": "..." }
+  ]
+}
+```
+
+`mode` è `semantic` quando gli embedding sono configurati, altrimenti `keyword`
+(fallback automatico alla ricerca full-text). `score` è la similarità coseno (0..1).
+La query è una **descrizione in linguaggio naturale**, non solo parole chiave.
+
 ### Dettaglio bando
 
 ```bash

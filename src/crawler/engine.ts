@@ -9,6 +9,7 @@ import { fetchHttp, fetchBrowser } from './fetcher'
 import { getParser } from './parsers'
 import { classify } from './dedup'
 import { notifyMatchingUsers } from '@/lib/notifications/matcher'
+import { setBandoEmbedding } from '@/lib/bandi/semantic'
 import type { DiscoveredItem } from './types'
 import type { Source } from '@prisma/client'
 
@@ -167,7 +168,8 @@ async function processItem(
         versions: { create: { version: 1, snapshot: data as object, reason: 'crawl-create' } },
       },
     })
-    // Fan out notifications to users whose profile matches (best-effort).
+    // Index for semantic search + fan out notifications (both best-effort).
+    await setBandoEmbedding(created.id, extracted)
     await notifyMatchingUsers(created).catch(() => {})
     return 'created'
   }
@@ -185,6 +187,8 @@ async function processItem(
       data: { bandoId: dedup.bandoId, version: prev + 1, snapshot: data as object, reason: 'crawl-update' },
     }),
   ])
+  // Content changed → refresh the semantic embedding (best-effort).
+  await setBandoEmbedding(dedup.bandoId, extracted)
   return 'updated'
 }
 

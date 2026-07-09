@@ -5,12 +5,13 @@
 
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearchPostgres"]
+  previewFeatures = ["fullTextSearchPostgres", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector] // pgvector — semantic search (CREATE EXTENSION emitted by migrate)
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -351,6 +352,11 @@ model Bando {
 
   // Full-text search vector maintained by DB trigger / raw SQL
   searchText   String?     @db.Text
+
+  // Semantic search (pgvector). 1536 dims = OpenAI text-embedding-3-small.
+  // Unsupported → written/read via raw SQL (see src/lib/bandi/semantic.ts).
+  embedding    Unsupported("vector(1536)")?
+  embeddedAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

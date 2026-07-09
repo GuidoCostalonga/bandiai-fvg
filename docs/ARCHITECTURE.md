@@ -52,6 +52,18 @@ tramite code BullMQ, così l'UX non è mai bloccata.
 - **extract.ts** — prompt di estrazione strutturata, validato con Zod (`bandoExtractionSchema`),
   fallback minimale se la validazione fallisce (la pipeline non si rompe mai).
 - **insight.ts** — genera il bundle "Area AI" (riassunto semplice, checklist, FAQ, timeline…).
+- **embeddings.ts** — genera vettori (OpenAI `text-embedding-3-small`, 1536 dim) per la
+  ricerca semantica. `isEmbeddingConfigured()` permette il fallback automatico.
+
+### 2b. Ricerca semantica (`src/lib/bandi/semantic.ts` + pgvector)
+Ogni bando viene indicizzato con un embedding salvato nella colonna `vector(1536)`
+(`Unsupported` in Prisma, letta/scritta via SQL raw). `semanticSearch()` embedda la query
+e ordina per **distanza coseno** (`<=>`), applicando i filtri (aperti/FVG) in-DB prima del
+ranking. Se gli embedding non sono configurati, la funzione ritorna `null` e il chiamante
+(`/api/search`, pagina `/bandi`) ripiega **trasparentemente** sulla ricerca full-text. Un
+indice ANN **HNSW** (in `prisma/sql/002_vector_index.sql`) rende la ricerca veloce su scala.
+L'indicizzazione avviene automaticamente in fase di crawl; `pnpm embed:backfill` popola i
+bandi preesistenti.
 
 ### 3. Dati (`prisma/schema.prisma`)
 Modello normalizzato: `Source` → `CrawlRun` → `CrawlLog`; `Bando` → `AiInsight`,

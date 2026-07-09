@@ -13,7 +13,7 @@ Legenda: ✅ fatto · 🟡 parziale (fondamenta pronte, da completare) · ⬜ pi
 
 ## Fase 2 — Consolidamento 🟡
 - 🟡 Parser dedicati per ogni Comune/Camera/Ministero (oggi: FVG dedicato + generici)
-- 🟡 Ricerca **semantica** con embeddings (pgvector) affiancata alla full-text
+- ✅ Ricerca **semantica** con embeddings (pgvector) + fallback full-text automatico
 - 🟡 Email magic-link + Web Push (VAPID) end-to-end; WhatsApp provider
 - 🟡 2FA (TOTP) completo sopra i campi già presenti
 - ⬜ Admin: editor sorgenti/bandi inline, retry code, gestione ruoli da UI

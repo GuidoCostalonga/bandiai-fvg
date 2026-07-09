@@ -23,6 +23,12 @@ const schema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
 
+  // Embeddings (semantic search). Anthropic has no embeddings API, so this
+  // always uses an OpenAI-compatible endpoint; falls back to OPENAI_API_KEY.
+  EMBEDDING_MODEL: z.string().default('text-embedding-3-small'),
+  EMBEDDING_API_KEY: z.string().optional(),
+  EMBEDDING_BASE_URL: z.string().optional(),
+
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   DISCORD_WEBHOOK_URL: z.string().optional(),
   SLACK_WEBHOOK_URL: z.string().optional(),

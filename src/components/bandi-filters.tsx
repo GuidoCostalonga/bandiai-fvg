@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useCallback } from 'react'
-import { Search } from 'lucide-react'
+import { Search, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const QUICK = [
@@ -17,6 +17,7 @@ export function BandiFilters() {
   const router = useRouter()
   const params = useSearchParams()
   const [q, setQ] = useState(params.get('q') ?? '')
+  const semantic = params.get('semantic') === 'true'
 
   const setParam = useCallback(
     (key: string, value: string | null) => {
@@ -43,7 +44,7 @@ export function BandiFilters() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Cerca per titolo, ente, parola chiave…"
+            placeholder={semantic ? 'Descrivi cosa cerchi, es. "aiuti per aprire un birrificio"…' : 'Cerca per titolo, ente, parola chiave…'}
             className="h-10 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
@@ -51,6 +52,15 @@ export function BandiFilters() {
       </form>
 
       <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant={semantic ? 'default' : 'outline'}
+          onClick={() => setParam('semantic', semantic ? null : 'true')}
+          title="Ricerca per significato, non solo per parole esatte"
+        >
+          <Sparkles className="h-4 w-4" /> Ricerca AI
+        </Button>
         {QUICK.map((f) => {
           const active = params.get(f.key) === 'true'
           return (
