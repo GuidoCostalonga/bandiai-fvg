@@ -1,0 +1,763 @@
+﻿<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="BandiAI FVG - monitoraggio intelligente dei bandi pubblici del Friuli Venezia Giulia con AI, ricerca semantica e notifiche. Demo interattiva.">
+<title>BandiAI FVG — Monitoraggio intelligente dei bandi pubblici</title>
+<style>
+  :root {
+    --bg: #f4f6fa;
+    --surface: #ffffff;
+    --surface-2: #eef2f7;
+    --ink: #14203a;
+    --muted: #5a6678;
+    --border: #d9e0ea;
+    --primary: #1b4bce;
+    --primary-soft: rgba(27, 75, 206, 0.10);
+    --gold: #9c6b12;
+    --gold-soft: rgba(200, 140, 26, 0.14);
+    --open: #0f875b;
+    --open-soft: rgba(15, 135, 91, 0.13);
+    --soon: #c85f0c;
+    --soon-soft: rgba(200, 95, 12, 0.14);
+    --closed: #b83a2d;
+    --shadow: 0 1px 2px rgba(20, 32, 58, .06), 0 8px 24px -12px rgba(20, 32, 58, .18);
+    --font-display: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+    --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+    --maxw: 1180px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1322;
+      --surface: #111d33;
+      --surface-2: #172743;
+      --ink: #eaf0f8;
+      --muted: #90a1b7;
+      --border: #223451;
+      --primary: #6b98ff;
+      --primary-soft: rgba(107, 152, 255, 0.14);
+      --gold: #e7b24b;
+      --gold-soft: rgba(231, 178, 75, 0.16);
+      --open: #37d39b;
+      --open-soft: rgba(55, 211, 155, 0.15);
+      --soon: #fb9a3c;
+      --soon-soft: rgba(251, 154, 60, 0.16);
+      --closed: #f87171;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 12px 30px -14px rgba(0, 0, 0, .6);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f4f6fa; --surface: #ffffff; --surface-2: #eef2f7; --ink: #14203a;
+    --muted: #5a6678; --border: #d9e0ea; --primary: #1b4bce; --primary-soft: rgba(27,75,206,.10);
+    --gold: #9c6b12; --gold-soft: rgba(200,140,26,.14); --open: #0f875b; --open-soft: rgba(15,135,91,.13);
+    --soon: #c85f0c; --soon-soft: rgba(200,95,12,.14); --closed: #b83a2d;
+    --shadow: 0 1px 2px rgba(20,32,58,.06), 0 8px 24px -12px rgba(20,32,58,.18);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1322; --surface: #111d33; --surface-2: #172743; --ink: #eaf0f8;
+    --muted: #90a1b7; --border: #223451; --primary: #6b98ff; --primary-soft: rgba(107,152,255,.14);
+    --gold: #e7b24b; --gold-soft: rgba(231,178,75,.16); --open: #37d39b; --open-soft: rgba(55,211,155,.15);
+    --soon: #fb9a3c; --soon-soft: rgba(251,154,60,.16); --closed: #f87171;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 30px -14px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--font-sans); font-size: 16px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; line-height: 1.12; text-wrap: balance; margin: 0; }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  /* ---------- Header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 40; background: color-mix(in srgb, var(--bg) 86%, transparent);
+    backdrop-filter: blur(10px); border-bottom: 1px solid var(--border);
+  }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 62px; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -.01em; }
+  .brand .mark {
+    width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+    background: var(--ink); color: var(--bg); flex: none;
+  }
+  .brand .mark svg { width: 17px; height: 17px; }
+  .brand b { font-family: var(--font-sans); font-size: 1.02rem; }
+  .brand b span { color: var(--primary); }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-links a {
+    color: var(--muted); font-size: .9rem; font-weight: 500; padding: 7px 11px; border-radius: 7px;
+  }
+  .nav-links a:hover { color: var(--ink); background: var(--surface-2); text-decoration: none; }
+  .nav-right { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--ink); display: grid; place-items: center; cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--surface-2); }
+  .icon-btn svg { width: 18px; height: 18px; }
+  @media (max-width: 780px) { .nav-links { display: none; } }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; font: inherit; font-weight: 600; font-size: .92rem;
+    padding: 10px 18px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; white-space: nowrap;
+  }
+  .btn svg { width: 16px; height: 16px; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { filter: brightness(1.06); text-decoration: none; }
+  .btn-ghost { background: var(--surface); border-color: var(--border); color: var(--ink); }
+  .btn-ghost:hover { background: var(--surface-2); text-decoration: none; }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 64px 0 30px; }
+  .demo-pill {
+    display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: .7rem;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--gold);
+    background: var(--gold-soft); border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+    padding: 5px 11px; border-radius: 999px; margin-bottom: 22px;
+  }
+  .demo-pill .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--gold); }
+  .hero h1 { font-size: clamp(2.5rem, 6.2vw, 4.3rem); letter-spacing: -.015em; }
+  .hero h1 .accent { color: var(--primary); font-style: italic; }
+  .hero p.lead {
+    max-width: 44ch; margin: 22px 0 0; font-size: clamp(1.05rem, 2vw, 1.22rem); color: var(--muted);
+  }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+  .stat-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; margin-top: 52px;
+    background: var(--border); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+  }
+  .stat { background: var(--surface); padding: 20px 22px; }
+  .stat .n {
+    font-family: var(--font-display); font-size: 1.9rem; font-weight: 600; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums; display: block;
+  }
+  .stat .n.gold { color: var(--gold); }
+  .stat .l { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+  @media (max-width: 720px) { .stat-strip { grid-template-columns: repeat(2, 1fr); } }
+
+  /* ---------- Section frame ---------- */
+  section { padding: 46px 0; }
+  .sec-head { margin-bottom: 26px; }
+  .sec-head h2 { font-size: clamp(1.7rem, 3.4vw, 2.3rem); letter-spacing: -.01em; }
+  .sec-head p { color: var(--muted); margin: 10px 0 0; max-width: 60ch; }
+
+  /* ---------- Demo controls ---------- */
+  .demo { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); }
+  .demo-top { padding: 18px 18px 0; }
+  .search-row { display: flex; gap: 10px; }
+  .search-box { position: relative; flex: 1; }
+  .search-box svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--muted); }
+  .search-box input {
+    width: 100%; height: 46px; padding: 0 14px 0 40px; border-radius: 11px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--ink); font: inherit; font-size: .95rem;
+  }
+  .search-box input::placeholder { color: color-mix(in srgb, var(--muted) 80%, transparent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 18px 18px; align-items: center; }
+  .chip {
+    font: inherit; font-size: .84rem; font-weight: 500; padding: 7px 13px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip:hover { color: var(--ink); border-color: var(--muted); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .chip.ai { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 40%, var(--border)); }
+  .chip.ai svg { width: 14px; height: 14px; }
+  .chip.ai[aria-pressed="true"] { background: var(--gold); color: #241a05; border-color: var(--gold); }
+  .chip .x { font-size: 1rem; line-height: 0; opacity: .7; }
+  .demo-sep { height: 1px; background: var(--border); }
+  .result-meta {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 18px; font-size: .85rem; color: var(--muted); flex-wrap: wrap;
+  }
+  .result-meta .ai-note { color: var(--gold); display: inline-flex; gap: 6px; align-items: center; }
+  .result-meta .ai-note svg { width: 14px; height: 14px; }
+
+  /* ---------- Cards grid ---------- */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 4px 18px 20px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 14px; padding: 15px;
+    display: flex; flex-direction: column; gap: 10px; position: relative; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+  .card-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .badge {
+    font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .b-open { background: var(--open-soft); color: var(--open); }
+  .b-soon { background: var(--soon-soft); color: var(--soon); }
+  .b-closed { background: color-mix(in srgb, var(--closed) 15%, transparent); color: var(--closed); }
+  .card h3 { font-family: var(--font-sans); font-size: 1rem; font-weight: 650; line-height: 1.3; letter-spacing: -.005em; }
+  .card .ente { font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .card .ente svg { width: 13px; height: 13px; flex: none; }
+  .card .summary { font-size: .85rem; color: var(--muted); margin: 0; }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; }
+  .tag { font-size: .68rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); text-transform: lowercase; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .amount { font-family: var(--font-display); font-weight: 600; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .amount small { font-family: var(--font-sans); font-weight: 400; color: var(--muted); font-size: .68rem; display: block; letter-spacing: .02em; text-transform: uppercase; }
+  .deadline { font-size: .78rem; color: var(--muted); text-align: right; }
+  .deadline b { color: var(--ink); font-weight: 600; }
+  .match {
+    font-family: var(--font-mono); font-size: .72rem; font-weight: 600; color: var(--gold);
+    background: var(--gold-soft); padding: 2px 7px; border-radius: 6px;
+  }
+  .cmp {
+    position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer;
+    display: grid; place-items: center; opacity: 0; transition: opacity .15s; z-index: 2;
+  }
+  .card:hover .cmp, .cmp[aria-pressed="true"] { opacity: 1; }
+  .cmp:hover { color: var(--ink); }
+  .cmp[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .cmp svg { width: 14px; height: 14px; }
+  .empty { padding: 50px 20px; text-align: center; color: var(--muted); grid-column: 1 / -1; }
+
+  /* ---------- How it works ---------- */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  @media (max-width: 820px) { .steps { grid-template-columns: 1fr; } }
+  .step { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 26px; position: relative; }
+  .step .num {
+    font-family: var(--font-mono); font-size: .8rem; color: var(--primary); font-weight: 700;
+    border: 1px solid color-mix(in srgb, var(--primary) 40%, var(--border)); border-radius: 8px;
+    width: 34px; height: 34px; display: grid; place-items: center; margin-bottom: 16px;
+  }
+  .step h3 { font-family: var(--font-sans); font-size: 1.15rem; font-weight: 650; }
+  .step p { color: var(--muted); font-size: .92rem; margin: 8px 0 0; }
+  .step .arrow { position: absolute; right: -18px; top: 50%; transform: translateY(-50%); color: var(--border); z-index: 2; }
+  @media (max-width: 820px) { .step .arrow { display: none; } }
+  .step .arrow svg { width: 22px; height: 22px; }
+
+  /* ---------- Features ---------- */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .features { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
+  .feature { padding: 22px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+  .feature .fi { width: 38px; height: 38px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; margin-bottom: 14px; }
+  .feature .fi svg { width: 20px; height: 20px; }
+  .feature h3 { font-family: var(--font-sans); font-size: 1.02rem; font-weight: 650; }
+  .feature p { color: var(--muted); font-size: .88rem; margin: 7px 0 0; }
+
+  /* ---------- Stack ---------- */
+  .stack-band { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .stack { display: flex; flex-wrap: wrap; gap: 10px 26px; align-items: center; justify-content: center; padding: 30px 0; }
+  .stack span { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); }
+  .stack span b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Footer ---------- */
+  footer { padding: 46px 0 60px; border-top: 1px solid var(--border); margin-top: 20px; }
+  .foot-grid { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+  footer p { color: var(--muted); font-size: .88rem; max-width: 48ch; margin: 10px 0 0; }
+  .disclaimer {
+    margin-top: 26px; padding: 14px 16px; border: 1px dashed var(--border); border-radius: 12px;
+    font-size: .82rem; color: var(--muted); background: var(--surface);
+  }
+  .disclaimer b { color: var(--ink); }
+
+  /* ---------- Compare bar + modal ---------- */
+  .cmp-bar {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(140%);
+    z-index: 60; display: flex; align-items: center; gap: 12px; max-width: 620px; width: calc(100% - 40px);
+    background: color-mix(in srgb, var(--surface) 96%, transparent); border: 1px solid var(--border);
+    box-shadow: var(--shadow); border-radius: 999px; padding: 9px 9px 9px 18px; backdrop-filter: blur(10px);
+    transition: transform .28s cubic-bezier(.2,.8,.2,1);
+  }
+  .cmp-bar.show { transform: translateX(-50%) translateY(0); }
+  .cmp-bar .lbl { font-size: .88rem; font-weight: 600; flex: none; }
+  .cmp-bar .picks { display: flex; gap: 6px; flex: 1; overflow: hidden; }
+  .cmp-bar .pick { font-size: .74rem; background: var(--surface-2); border-radius: 999px; padding: 3px 9px; white-space: nowrap; color: var(--muted); }
+  .cmp-bar .actions { display: flex; gap: 6px; flex: none; }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 70; background: rgba(6, 12, 24, .55); display: none;
+    align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(3px);
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow);
+    max-width: 860px; width: 100%; max-height: 88vh; overflow: auto;
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+  .modal-head h3 { font-family: var(--font-display); font-size: 1.3rem; display: flex; align-items: center; gap: 9px; }
+  .cmp-table-wrap { overflow-x: auto; }
+  table.cmp-table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: .88rem; }
+  .cmp-table th, .cmp-table td { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .cmp-table thead th { background: var(--surface-2); font-family: var(--font-sans); font-weight: 650; font-size: .82rem; }
+  .cmp-table tbody th { color: var(--muted); font-weight: 500; white-space: nowrap; width: 150px; }
+  .cmp-table td.best { color: var(--gold); font-weight: 700; }
+  .cmp-table td.best::before { content: "★ "; }
+  .row-hint { font-size: .76rem; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  .reveal { opacity: 0; transform: translateY(14px); }
+  .reveal.in { opacity: 1; transform: none; transition: opacity .6s ease, transform .6s ease; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.3-4.3"/><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6"/></svg>
+      </span>
+      <b>BandiAI <span>FVG</span></b>
+    </div>
+    <nav class="nav-links">
+      <a href="#demo">Bandi</a>
+      <a href="#come">Come funziona</a>
+      <a href="#funzioni">Funzioni</a>
+      <a href="#stack">Tecnologia</a>
+    </nav>
+    <div class="nav-right">
+      <button class="icon-btn" id="theme" aria-label="Cambia tema" title="Cambia tema">
+        <svg id="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a class="btn btn-primary" href="#demo">Esplora i bandi</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="demo-pill"><span class="dot"></span> Demo interattiva · dati di esempio</span>
+      <h1>Non cercare i bandi.<br><span class="accent">Te li troviamo noi.</span></h1>
+      <p class="lead">Un sistema che sorveglia in automatico Regione, Comuni, Camere di Commercio, Ministeri, PNRR e programmi europei del Friuli Venezia Giulia. L'intelligenza artificiale legge, riassume e ti avvisa quando esce un bando adatto a te.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#demo">Prova la ricerca <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn btn-ghost" href="#come">Come funziona</a>
+      </div>
+      <div class="stat-strip" id="stat-strip">
+        <div class="stat"><span class="n" id="s-total">—</span><span class="l">Bandi monitorati</span></div>
+        <div class="stat"><span class="n" id="s-open">—</span><span class="l">Attualmente aperti</span></div>
+        <div class="stat"><span class="n" id="s-soon">—</span><span class="l">In scadenza (7 gg)</span></div>
+        <div class="stat"><span class="n gold" id="s-fund">—</span><span class="l">Finanziamenti mappati</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="demo">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Il feed</span>
+        <h2>I bandi, filtrati per te</h2>
+        <p>Cerca per parola chiave o attiva la <b>Ricerca AI</b> per descrivere ciò che ti serve in linguaggio naturale. Seleziona fino a 3 bandi per confrontarli.</p>
+      </div>
+
+      <div class="demo reveal">
+        <div class="demo-top">
+          <div class="search-row">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+              <input id="q" type="search" autocomplete="off" placeholder="Cerca per titolo, ente, parola chiave…" aria-label="Cerca bandi">
+            </div>
+          </div>
+        </div>
+        <div class="chips" id="chips">
+          <button class="chip ai" data-ai aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>
+            Ricerca AI
+          </button>
+          <button class="chip" data-filter="open" aria-pressed="false">Solo aperti</button>
+          <button class="chip" data-filter="fvg" aria-pressed="false">Solo FVG</button>
+          <button class="chip" data-filter="pnrr" aria-pressed="false">PNRR</button>
+          <button class="chip" data-filter="eu" aria-pressed="false">Europa</button>
+        </div>
+        <div class="demo-sep"></div>
+        <div class="result-meta">
+          <span id="count">—</span>
+          <span class="ai-note" id="ai-note" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/></svg>
+            Ordinati per rilevanza semantica
+          </span>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="come">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">La pipeline</span>
+        <h2>Tre passi, in automatico</h2>
+        <p>Non è una ricerca manuale: è un processo continuo che gira 24/7 su ogni sorgente pubblica.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="num">01</div>
+          <h3>Trova</h3>
+          <p>Crawler dedicati con parser per PDF, DOC, Excel, HTML, RSS, sitemap e API — con browser headless per pagine JavaScript e Cloudflare. Retry, rate-limiting, deduplicazione e versioning.</p>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="step reveal">
+          <div class="num">02</div>
+          <h3>Legge</h3>
+          <p>L'AI legge l'intero bando e gli allegati ed estrae 25+ campi strutturati: importi, scadenze, beneficiari, spese ammissibili, procedura. Poi lo classifica in 30 categorie.</p>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="step reveal">
+          <div class="num">03</div>
+          <h3>Avvisa</h3>
+          <p>Confronta ogni nuovo bando con il tuo profilo (categorie, territorio, tipologia, budget) e ti notifica solo quelli compatibili — via email, Telegram, WhatsApp, Slack, Discord o webhook.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="funzioni">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <span class="eyebrow">Cosa include</span>
+        <h2>Non solo un elenco di bandi</h2>
+        <p>Ogni bando diventa una guida operativa, con un assistente che risponde alle tue domande.</p>
+      </div>
+      <div class="features" id="features"></div>
+    </div>
+  </section>
+
+  <div class="stack-band" id="stack">
+    <div class="wrap stack reveal">
+      <span><b>Next.js 15</b> · React 19</span>
+      <span><b>TypeScript</b></span>
+      <span><b>Prisma</b> · PostgreSQL</span>
+      <span><b>pgvector</b> ricerca semantica</span>
+      <span><b>Redis</b> · BullMQ</span>
+      <span><b>Playwright</b> crawler</span>
+      <span><b>OpenAI / Claude</b></span>
+      <span><b>Docker</b></span>
+    </div>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div class="brand">
+          <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.3-4.3"/><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6"/></svg></span>
+          <b>BandiAI <span>FVG</span></b>
+        </div>
+        <p>Monitoraggio automatico dei bandi pubblici del Friuli Venezia Giulia. Dati da fonti ufficiali, analisi e notifiche potenziate dall'AI.</p>
+      </div>
+      <div class="disclaimer">
+        <b>Nota:</b> questa è una <b>vetrina interattiva con dati di esempio</b>, non l'applicazione reale collegata alle fonti. L'app completa è un progetto full-stack (Next.js + PostgreSQL + Redis + worker) che richiede un server e un database per funzionare con bandi reali.
+      </div>
+    </div>
+  </footer>
+</main>
+
+<!-- Compare bar -->
+<div class="cmp-bar" id="cmp-bar" role="region" aria-label="Bandi selezionati per il confronto">
+  <span class="lbl" id="cmp-count">0 selezionati</span>
+  <div class="picks" id="cmp-picks"></div>
+  <div class="actions">
+    <button class="btn btn-ghost" id="cmp-clear" style="padding:8px 12px">Svuota</button>
+    <button class="btn btn-primary" id="cmp-open" style="padding:8px 14px">Confronta</button>
+  </div>
+</div>
+
+<!-- Compare modal -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cmp-title">
+    <div class="modal-head">
+      <h3 id="cmp-title">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"/></svg>
+        Confronto bandi
+      </h3>
+      <button class="icon-btn" id="cmp-close" aria-label="Chiudi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="cmp-table-wrap"><div id="cmp-body"></div></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var DAY = 86400000;
+  var now = Date.now();
+
+  // ---- Mock data (evergreen: deadlines are offsets from "now") ----
+  var BANDI = [
+    { slug:"impiantistica-sportiva-2025", title:"Contributi per l'impiantistica sportiva", ente:"Regione Autonoma FVG", cat:["sport","impiantistica sportiva"], ben:["comuni","associazioni"], terr:"Friuli Venezia Giulia", perc:70, max:250000, tot:4000000, due:83, kind:"regione", sum:"Riqualificazione ed efficientamento di palestre, piscine e campi sportivi comunali." },
+    { slug:"voucher-digitalizzazione-pmi", title:"Voucher digitalizzazione micro e PMI", ente:"CCIAA Pordenone-Udine", cat:["pmi","digitale","innovazione"], ben:["pmi","imprese"], terr:"Pordenone, Udine", perc:50, max:15000, tot:1200000, due:44, kind:"camera", sum:"Acquisto di software gestionali, e-commerce, cybersecurity e consulenza digitale." },
+    { slug:"startup-innovative-incubatori", title:"Startup innovative e incubatori d'impresa", ente:"Regione Autonoma FVG", cat:["startup","innovazione","digitale"], ben:["startup","imprese"], terr:"Friuli Venezia Giulia", perc:60, max:120000, tot:3000000, due:98, kind:"regione", sum:"Sostegno alla nascita e crescita di startup ad alto contenuto tecnologico." },
+    { slug:"turismo-sostenibile-ricettivita", title:"Turismo sostenibile e ricettività diffusa", ente:"Comune di Trieste", cat:["turismo","ambiente"], ben:["imprese","associazioni"], terr:"Trieste", perc:40, max:40000, tot:600000, due:22, kind:"comune", sum:"Interventi per alberghi diffusi, mobilità dolce e destagionalizzazione dell'offerta." },
+    { slug:"interreg-italia-slovenia-cultura", title:"Interreg Italia-Slovenia: cooperazione culturale", ente:"Programma Interreg IT-SI", cat:["cultura","internazionalizzazione"], ben:["enti pubblici","associazioni"], terr:"Area transfrontaliera", perc:85, max:300000, tot:9000000, due:134, kind:"eu", sum:"Progetti transfrontalieri di valorizzazione del patrimonio culturale condiviso." },
+    { slug:"efficientamento-edifici-pnrr", title:"Efficientamento energetico degli edifici pubblici", ente:"PNRR — Italia Domani", cat:["energia","comuni","ambiente"], ben:["comuni","enti pubblici"], terr:"Friuli Venezia Giulia", perc:100, max:500000, tot:20000000, due:63, kind:"pnrr", sum:"Riqualificazione energetica di scuole, municipi e strutture pubbliche con fondi PNRR." },
+    { slug:"artigiani-legno-arredo", title:"Sostegno alle imprese artigiane del legno-arredo", ente:"Regione Autonoma FVG", cat:["artigiani","imprese","export"], ben:["imprese","artigiani"], terr:"Friuli Venezia Giulia", perc:45, max:80000, tot:2200000, due:5, kind:"regione", sum:"Investimenti in macchinari, design e nuovi mercati per la filiera del mobile." },
+    { slug:"inclusione-disabilita", title:"Progetti per l'inclusione di persone con disabilità", ente:"Regione Autonoma FVG", cat:["disabilità","terzo settore","sanità"], ben:["associazioni","enti terzo settore"], terr:"Friuli Venezia Giulia", perc:80, max:60000, tot:1500000, due:145, kind:"regione", sum:"Servizi di autonomia, inserimento lavorativo e vita indipendente." },
+    { slug:"erasmus-mobilita-giovani", title:"Erasmus+ mobilità giovani e scuole", ente:"Agenzia Nazionale Erasmus+", cat:["giovani","scuole","internazionalizzazione"], ben:["scuole","associazioni"], terr:"Europa", perc:100, max:45000, tot:5000000, due:85, kind:"eu", sum:"Scambi, tirocini e partenariati educativi in tutta l'Unione Europea." },
+    { slug:"agricoltura-montagna", title:"Agricoltura di montagna e filiere locali", ente:"Regione Autonoma FVG", cat:["agricoltura","ambiente"], ben:["imprese","cooperative"], terr:"Aree montane FVG", perc:65, max:90000, tot:2800000, due:11, kind:"regione", sum:"Sostegno alle produzioni tipiche, alla zootecnia e alla filiera corta di montagna." }
+  ];
+
+  var FEATURES = [
+    { i:'M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9z', t:"Estrazione AI", d:"25+ campi strutturati da PDF, DOC ed Excel: importi, scadenze, spese ammissibili, procedura." },
+    { i:'M11 4h10M11 9h7M11 14h10M11 19h7M4 4l1.5 1.5L8 3M4 14l1.5 1.5L8 13', t:"Ricerca semantica", d:"Descrivi in parole tue cosa ti serve: pgvector trova i bandi per significato, non solo parole." },
+    { i:'M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0', t:"Notifiche compatibili", d:"Email, Telegram, WhatsApp, Slack, Discord, webhook — solo per i bandi adatti a te." },
+    { i:'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z', t:"Calendario ed ICS", d:"Vista scadenze ed esportazione in Google, Apple e Outlook Calendar con un clic." },
+    { i:'M12 8V4H8M4 8v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M2 8h20M9 13a3 3 0 0 0 6 0', t:"Assistente AI", d:'"Posso partecipare?", "Fammi la checklist", "Spiegamelo come a un 14enne" — sul singolo bando.' },
+    { i:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', t:"Sicurezza", d:"Rate limiting, CSP, validazione input, ruoli, audit log e predisposizione 2FA." }
+  ];
+
+  var state = { q:"", ai:false, filters:{ open:false, fvg:false, pnrr:false, eu:false }, compare:[] };
+  var eur = new Intl.NumberFormat('it-IT', { style:'currency', currency:'EUR', maximumFractionDigits:0 });
+  var dfmt = new Intl.DateTimeFormat('it-IT', { day:'2-digit', month:'short', year:'numeric' });
+
+  function statusOf(b) { return b.due < 0 ? "closed" : b.due <= 7 ? "soon" : "open"; }
+  function dueDate(b) { return dfmt.format(new Date(now + b.due * DAY)); }
+  function searchText(b) { return (b.title + " " + b.ente + " " + b.cat.join(" ") + " " + b.ben.join(" ") + " " + b.sum + " " + b.terr).toLowerCase(); }
+
+  function relevance(b, tokens) {
+    var hay = searchText(b), score = 0;
+    tokens.forEach(function (t) {
+      if (!t) return;
+      if (hay.indexOf(t) !== -1) score += 1;
+      // partial credit for stems
+      else if (t.length > 4 && hay.indexOf(t.slice(0, 4)) !== -1) score += 0.5;
+    });
+    return tokens.length ? score / tokens.length : 0;
+  }
+
+  function passesFilters(b) {
+    var f = state.filters;
+    if (f.open && statusOf(b) === "closed") return false;
+    if (f.fvg && b.terr.toLowerCase().indexOf("friuli") === -1 && b.terr.toLowerCase().indexOf("fvg") === -1
+        && b.terr.toLowerCase().indexOf("trieste") === -1 && b.terr.toLowerCase().indexOf("udine") === -1
+        && b.terr.toLowerCase().indexOf("pordenone") === -1 && b.terr.toLowerCase().indexOf("montane") === -1) return false;
+    if (f.pnrr && b.kind !== "pnrr") return false;
+    if (f.eu && b.kind !== "eu") return false;
+    return true;
+  }
+
+  function currentList() {
+    var list = BANDI.filter(passesFilters);
+    var q = state.q.trim().toLowerCase();
+    if (q) {
+      if (state.ai) {
+        var tokens = q.split(/\s+/);
+        list = list.map(function (b) { return { b:b, s:relevance(b, tokens) }; })
+                   .filter(function (x) { return x.s > 0; })
+                   .sort(function (a, b) { return b.s - a.s; })
+                   .map(function (x) { x.b._match = Math.round(40 + x.s * 59); return x.b; });
+      } else {
+        list = list.filter(function (b) { return searchText(b).indexOf(q) !== -1; })
+                   .map(function (b) { b._match = null; return b; });
+      }
+    } else {
+      list.forEach(function (b) { b._match = null; });
+    }
+    return list;
+  }
+
+  function svg(path, w) { return '<svg viewBox="0 0 24 24" width="'+(w||16)+'" height="'+(w||16)+'" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>'; }
+
+  function cardHTML(b) {
+    var st = statusOf(b);
+    var badge = st === "open" ? '<span class="badge b-open">Aperto</span>'
+              : st === "soon" ? '<span class="badge b-soon">In scadenza</span>'
+              : '<span class="badge b-closed">Chiuso</span>';
+    var pressed = state.compare.indexOf(b.slug) !== -1;
+    var tags = b.cat.slice(0, 3).map(function (c) { return '<span class="tag">'+c+'</span>'; }).join("");
+    var match = b._match != null ? '<span class="match">'+b._match+'% match</span>' : '';
+    var dl = st === "closed" ? 'Scaduto' : '<b>'+b.due+' gg</b> · '+dueDate(b);
+    return ''
+      + '<article class="card">'
+      +   '<button class="cmp" data-slug="'+b.slug+'" aria-pressed="'+pressed+'" aria-label="Aggiungi al confronto" title="Aggiungi al confronto">'
+      +     (pressed ? svg('<path d="M20 6 9 17l-5-5"/>',14) : svg('<path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3M12 2v20"/>',14))
+      +   '</button>'
+      +   '<div class="card-top">'+badge+match+'</div>'
+      +   '<h3>'+b.title+'</h3>'
+      +   '<div class="ente">'+svg('<path d="M3 21h18M6 21V7l6-4 6 4v14M10 9h.01M14 9h.01M10 13h.01M14 13h.01"/>',13)+b.ente+'</div>'
+      +   '<p class="summary">'+b.sum+'</p>'
+      +   '<div class="tags">'+tags+'<span class="tag">'+b.terr+'</span></div>'
+      +   '<div class="card-foot">'
+      +     '<span class="amount">'+eur.format(b.max)+'<small>Contributo max</small></span>'
+      +     '<span class="deadline">'+dl+'</span>'
+      +   '</div>'
+      + '</article>';
+  }
+
+  function render() {
+    var list = currentList();
+    var grid = document.getElementById("grid");
+    grid.innerHTML = list.length
+      ? list.map(cardHTML).join("")
+      : '<div class="empty">Nessun bando corrisponde ai filtri. Prova ad allargare la ricerca'+(state.ai ? '' : ' o attiva la Ricerca AI')+'.</div>';
+    document.getElementById("count").textContent = list.length + (list.length === 1 ? " bando trovato" : " bandi trovati");
+    document.getElementById("ai-note").hidden = !(state.ai && state.q.trim());
+    bindCompareButtons();
+    renderCompareBar();
+  }
+
+  function bindCompareButtons() {
+    Array.prototype.forEach.call(document.querySelectorAll(".cmp"), function (btn) {
+      btn.addEventListener("click", function () {
+        var slug = btn.getAttribute("data-slug");
+        var i = state.compare.indexOf(slug);
+        if (i !== -1) state.compare.splice(i, 1);
+        else if (state.compare.length >= 3) { flash("Puoi confrontare al massimo 3 bandi"); return; }
+        else state.compare.push(slug);
+        render();
+      });
+    });
+  }
+
+  var flashT;
+  function flash(msg) {
+    var el = document.getElementById("cmp-count");
+    var bar = document.getElementById("cmp-bar");
+    bar.classList.add("show");
+    el.textContent = msg;
+    clearTimeout(flashT);
+    flashT = setTimeout(renderCompareBar, 1600);
+  }
+
+  function renderCompareBar() {
+    var bar = document.getElementById("cmp-bar");
+    var n = state.compare.length;
+    document.getElementById("cmp-count").textContent = n + (n === 1 ? " selezionato" : " selezionati");
+    document.getElementById("cmp-picks").innerHTML = state.compare.map(function (s) {
+      var b = BANDI.find(function (x) { return x.slug === s; });
+      return '<span class="pick">'+b.title.slice(0, 22)+(b.title.length > 22 ? "…" : "")+'</span>';
+    }).join("");
+    document.getElementById("cmp-open").disabled = n < 2;
+    document.getElementById("cmp-open").style.opacity = n < 2 ? .5 : 1;
+    bar.classList.toggle("show", n > 0);
+  }
+
+  // ---- Comparison modal ----
+  function argmax(vals) {
+    var best = null, idx = null, seen = 0;
+    vals.forEach(function (v, i) { if (v == null) return; seen++; if (best === null || v > best) { best = v; idx = i; } });
+    return seen >= 2 ? idx : null;
+  }
+  function buildRows(items) {
+    var latest = argmax(items.map(function (b) { return now + b.due * DAY; }));
+    return [
+      { l:"Ente", v:items.map(function (b){return b.ente;}), best:null },
+      { l:"Stato", v:items.map(function (b){var s=statusOf(b);return s==="open"?"Aperto":s==="soon"?"In scadenza":"Chiuso";}), best:null },
+      { l:"Territorio", v:items.map(function (b){return b.terr;}), best:null },
+      { l:"Categorie", v:items.map(function (b){return b.cat.join(", ");}), best:null },
+      { l:"Contributo massimo", v:items.map(function (b){return eur.format(b.max);}), best:argmax(items.map(function (b){return b.max;})) },
+      { l:"Dotazione totale", v:items.map(function (b){return eur.format(b.tot);}), best:argmax(items.map(function (b){return b.tot;})) },
+      { l:"% finanziabile", v:items.map(function (b){return b.perc+"%";}), best:argmax(items.map(function (b){return b.perc;})) },
+      { l:"Scadenza", v:items.map(function (b){return statusOf(b)==="closed"?"Scaduto":dueDate(b)+" ("+b.due+" gg)";}), best:latest }
+    ];
+  }
+  function openModal() {
+    var items = state.compare.map(function (s) { return BANDI.find(function (x){return x.slug===s;}); });
+    if (items.length < 2) return;
+    var rows = buildRows(items);
+    var html = '<table class="cmp-table"><thead><tr><th>Caratteristica</th>'
+      + items.map(function (b){return '<th>'+b.title+'</th>';}).join("") + '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+      html += '<tr><th>'+r.l+'</th>' + r.v.map(function (val, i){ return '<td class="'+(r.best===i?'best':'')+'">'+val+'</td>'; }).join("") + '</tr>';
+    });
+    html += '</tbody></table><p class="row-hint" style="padding:12px 16px">★ indica il valore migliore per riga (contributo, dotazione e % più alti, scadenza più lontana).</p>';
+    document.getElementById("cmp-body").innerHTML = html;
+    var ov = document.getElementById("overlay");
+    ov.classList.add("show");
+  }
+  function closeModal() { document.getElementById("overlay").classList.remove("show"); }
+
+  // ---- Stats ----
+  function renderStats() {
+    var open = BANDI.filter(function (b){return statusOf(b)!=="closed";}).length;
+    var soon = BANDI.filter(function (b){return statusOf(b)==="soon";}).length;
+    var fund = BANDI.reduce(function (a, b){return a + b.tot;}, 0);
+    animateNum(document.getElementById("s-total"), BANDI.length, "");
+    animateNum(document.getElementById("s-open"), open, "");
+    animateNum(document.getElementById("s-soon"), soon, "");
+    document.getElementById("s-fund").textContent = "€ " + Math.round(fund/1000000) + " Mln";
+  }
+  function animateNum(el, target, suffix) {
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { el.textContent = target + suffix; return; }
+    var start = performance.now(), dur = 900;
+    function tick(t) {
+      var p = Math.min(1, (t - start) / dur);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ---- Features ----
+  function renderFeatures() {
+    document.getElementById("features").innerHTML = FEATURES.map(function (f) {
+      return '<div class="feature reveal"><div class="fi">'+svg('<path d="'+f.i+'"/>',20)+'</div><h3>'+f.t+'</h3><p>'+f.d+'</p></div>';
+    }).join("");
+    observeReveals();
+  }
+
+  // ---- Theme ----
+  function initTheme() {
+    var btn = document.getElementById("theme");
+    btn.addEventListener("click", function () {
+      var cur = document.documentElement.getAttribute("data-theme");
+      if (!cur) cur = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", cur === "dark" ? "light" : "dark");
+    });
+  }
+
+  // ---- Reveal on scroll ----
+  var io;
+  function observeReveals() {
+    if (!("IntersectionObserver" in window)) { Array.prototype.forEach.call(document.querySelectorAll(".reveal"), function (e){e.classList.add("in");}); return; }
+    if (!io) io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+    }, { threshold: .12 });
+    Array.prototype.forEach.call(document.querySelectorAll(".reveal:not(.in)"), function (e){ io.observe(e); });
+  }
+
+  // ---- Wire up ----
+  function init() {
+    renderStats(); renderFeatures(); render(); initTheme(); observeReveals();
+
+    document.getElementById("q").addEventListener("input", function (e) { state.q = e.target.value; render(); });
+    Array.prototype.forEach.call(document.querySelectorAll("#chips .chip"), function (chip) {
+      chip.addEventListener("click", function () {
+        if (chip.hasAttribute("data-ai")) {
+          state.ai = !state.ai;
+          chip.setAttribute("aria-pressed", state.ai);
+          document.getElementById("q").placeholder = state.ai
+            ? 'Descrivi cosa cerchi, es. "aiuti per aprire un birrificio artigianale"…'
+            : "Cerca per titolo, ente, parola chiave…";
+        } else {
+          var f = chip.getAttribute("data-filter");
+          state.filters[f] = !state.filters[f];
+          chip.setAttribute("aria-pressed", state.filters[f]);
+        }
+        render();
+      });
+    });
+
+    document.getElementById("cmp-clear").addEventListener("click", function () { state.compare = []; render(); });
+    document.getElementById("cmp-open").addEventListener("click", openModal);
+    document.getElementById("cmp-close").addEventListener("click", closeModal);
+    document.getElementById("overlay").addEventListener("click", function (e) { if (e.target.id === "overlay") closeModal(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+</script>
+
+</body>
+</html>

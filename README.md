@@ -10,6 +10,8 @@ riassume** e ti **avvisa** se è compatibile con il tuo profilo.
 
 > **Non cercare i bandi. Te li troviamo noi.**
 
+🔎 **Demo interattiva** (dati di esempio): pubblicata via GitHub Pages da [`showcase/index.html`](showcase/index.html) — vedi [Deploy](docs/DEPLOY.md).
+
 ---
 
 ## ✨ Funzionalità principali
