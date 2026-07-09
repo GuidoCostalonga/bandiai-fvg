@@ -1,0 +1,130 @@
+openapi: 3.1.0
+info:
+  title: BandiAI FVG API
+  version: 0.1.0
+  description: API REST per il monitoraggio dei bandi pubblici del Friuli Venezia Giulia.
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3000
+    description: Sviluppo
+paths:
+  /api/bandi:
+    get:
+      summary: Elenco bandi paginato e filtrato
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: categories, in: query, schema: { type: array, items: { type: string } } }
+        - { name: onlyOpen, in: query, schema: { type: boolean } }
+        - { name: onlyFvg, in: query, schema: { type: boolean } }
+        - { name: onlyPnrr, in: query, schema: { type: boolean } }
+        - { name: onlyEu, in: query, schema: { type: boolean } }
+        - { name: sort, in: query, schema: { type: string, enum: [recent, deadline, importo] } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200':
+          description: Lista bandi
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Bando' } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pageSize: { type: integer }
+                  totalPages: { type: integer }
+        '400': { description: Parametri non validi }
+  /api/bandi/{slug}:
+    get:
+      summary: Dettaglio bando con Area AI
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Bando
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BandoDetail' }
+        '404': { description: Non trovato }
+  /api/ai/chat:
+    post:
+      summary: Assistente AI (richiede autenticazione)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [messages]
+              properties:
+                bandoSlug: { type: string }
+                messages:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      role: { type: string, enum: [user, assistant] }
+                      content: { type: string }
+      responses:
+        '200':
+          description: Risposta dell'assistente
+          content:
+            application/json:
+              schema: { type: object, properties: { reply: { type: string } } }
+        '401': { description: Non autenticato }
+        '429': { description: Rate limit superato }
+  /api/profile:
+    get:
+      summary: Profilo utente corrente
+      responses: { '200': { description: Profilo }, '401': { description: Non autenticato } }
+    put:
+      summary: Aggiorna profilo
+      responses: { '200': { description: Salvato }, '400': { description: Non valido } }
+  /api/calendar/ics:
+    get:
+      summary: Feed iCalendar delle scadenze
+      responses: { '200': { description: text/calendar } }
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: Sano }
+        '503': { description: Degradato }
+  /api/cron/crawl:
+    post:
+      summary: Accoda crawl per tutte le sorgenti attive
+      security: [{ cronSecret: [] }]
+      responses: { '200': { description: Accodato }, '401': { description: Non autorizzato } }
+  /feed.xml:
+    get:
+      summary: Feed RSS pubblico
+      responses: { '200': { description: application/rss+xml } }
+components:
+  securitySchemes:
+    cronSecret:
+      type: http
+      scheme: bearer
+  schemas:
+    Bando:
+      type: object
+      properties:
+        id: { type: string }
+        slug: { type: string }
+        title: { type: string }
+        ente: { type: string }
+        status: { type: string, enum: [DRAFT, OPEN, CLOSING_SOON, CLOSED, ARCHIVED] }
+        summary: { type: string, nullable: true }
+        contributoMax: { type: number, nullable: true }
+        deadline: { type: string, format: date-time, nullable: true }
+        categories: { type: array, items: { type: string } }
+        territorio: { type: string, nullable: true }
+    BandoDetail:
+      allOf:
+        - $ref: '#/components/schemas/Bando'
+        - type: object
+          properties:
+            description: { type: string, nullable: true }
+            aiInsight: { type: object, nullable: true }
+            documents: { type: array, items: { type: object } }
