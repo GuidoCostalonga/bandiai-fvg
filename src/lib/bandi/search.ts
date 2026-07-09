@@ -3,6 +3,14 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { CATEGORY_VALUES, ENTITY_VALUES } from '@/lib/ai/schemas'
 
+/**
+ * Query-string boolean: `z.coerce.boolean()` treats the string "false" as true,
+ * so we parse booleans explicitly ("true"/"1" → true, everything else → false).
+ */
+const zBool = z
+  .preprocess((v) => v === true || v === 'true' || v === '1', z.boolean())
+  .optional()
+
 /** Validated filter/query params shared by the API and the UI. */
 export const searchParamsSchema = z.object({
   q: z.string().trim().optional(),
@@ -13,10 +21,10 @@ export const searchParamsSchema = z.object({
   importoMin: z.coerce.number().optional(),
   importoMax: z.coerce.number().optional(),
   deadlineBefore: z.coerce.date().optional(),
-  onlyOpen: z.coerce.boolean().optional(),
-  onlyFvg: z.coerce.boolean().optional(),
-  onlyPnrr: z.coerce.boolean().optional(),
-  onlyEu: z.coerce.boolean().optional(),
+  onlyOpen: zBool,
+  onlyFvg: zBool,
+  onlyPnrr: zBool,
+  onlyEu: zBool,
   sort: z.enum(['recent', 'deadline', 'importo']).default('recent'),
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

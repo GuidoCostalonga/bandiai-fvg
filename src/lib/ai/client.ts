@@ -60,7 +60,9 @@ export async function completeJson<T = unknown>(
       const res = await client.chat.completions.create({
         model: model(opts.kind ?? 'extract'),
         temperature: 0,
-        response_format: { type: 'json_object' },
+        // Anthropic's OpenAI-compatible endpoint doesn't accept response_format;
+        // only request JSON mode for OpenAI. extractJson() recovers JSON either way.
+        ...(env.AI_PROVIDER === 'openai' ? { response_format: { type: 'json_object' as const } } : {}),
         messages,
       })
       const text = res.choices[0]?.message?.content ?? '{}'
