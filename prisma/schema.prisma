@@ -1,0 +1,582 @@
+// ─────────────────────────────────────────────────────────────
+// BandiAI FVG — Prisma schema
+// PostgreSQL. Run: pnpm prisma migrate dev
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════════════════════════════════════════════════════
+// AUTH (Auth.js / NextAuth compatible)
+// ══════════════════════════════════════════════════════════════
+
+enum Role {
+  USER
+  EDITOR
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(USER)
+  passwordHash  String? // only for credentials/email fallback
+  twoFactorSecret String?
+  twoFactorEnabled Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  profile       UserProfile?
+  savedSearches SavedSearch[]
+  favorites     Favorite[]
+  notifications Notification[]
+  channels      NotificationChannel[]
+  comments      Comment[]
+  auditLogs     AuditLog[]
+  reminders     Reminder[]
+  aiThreads     AiThread[]
+
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ══════════════════════════════════════════════════════════════
+// USER PROFILE — drives compatibility matching for notifications
+// ══════════════════════════════════════════════════════════════
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Matching preferences
+  interests       String[] // free-text interests / keywords
+  categories      Category[]
+  territories     String[] // comune / provincia codes
+  entityTypes     EntityType[]
+  budgetMin       Int?
+  budgetMax       Int?
+  companySize     CompanySize?
+  atecoCode       String?
+  legalForm       String?
+  location        String?
+
+  // Locale
+  language        String   @default("it")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CompanySize {
+  MICRO
+  SMALL
+  MEDIUM
+  LARGE
+  NONE // private / association
+}
+
+// ══════════════════════════════════════════════════════════════
+// SOURCES & CRAWLER
+// ══════════════════════════════════════════════════════════════
+
+enum SourceKind {
+  REGIONE
+  COMUNE
+  PROVINCIA
+  CAMERA_COMMERCIO
+  MINISTERO
+  INVITALIA
+  PNRR
+  SPORT_SALUTE
+  DIP_SPORT
+  ANCI
+  GAL
+  FONDAZIONE_BANCARIA
+  UE
+  INTERREG
+  ERASMUS
+  LIFE
+  HORIZON
+  ALTRO
+}
+
+enum FetchStrategy {
+  HTML
+  RSS
+  SITEMAP
+  API
+  PDF_INDEX
+  PLAYWRIGHT
+}
+
+model Source {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  name          String
+  kind          SourceKind
+  homepageUrl   String
+  entryUrls     String[] // listing pages / feeds to crawl
+  parserKey     String // maps to a parser in src/crawler/parsers
+  strategy      FetchStrategy @default(HTML)
+  enabled       Boolean       @default(true)
+
+  // Politeness / robustness
+  rateLimitMs   Int           @default(1500)
+  usesJavascript Boolean      @default(false)
+  usesCloudflare Boolean      @default(false)
+
+  // Scheduling
+  cronExpression String       @default("0 */6 * * *") // every 6h
+  lastRunAt     DateTime?
+  lastSuccessAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs   CrawlRun[]
+  bandi  Bando[]
+
+  @@index([kind])
+  @@index([enabled])
+}
+
+enum CrawlStatus {
+  QUEUED
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+model CrawlRun {
+  id           String      @id @default(cuid())
+  sourceId     String
+  source       Source      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  status       CrawlStatus @default(QUEUED)
+  startedAt    DateTime    @default(now())
+  finishedAt   DateTime?
+  itemsFound   Int         @default(0)
+  itemsNew     Int         @default(0)
+  itemsUpdated Int         @default(0)
+  errorCount   Int         @default(0)
+  logs         CrawlLog[]
+
+  @@index([sourceId, startedAt])
+  @@index([status])
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
+
+model CrawlLog {
+  id        String   @id @default(cuid())
+  runId     String
+  run       CrawlRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  level     LogLevel @default(INFO)
+  message   String
+  url       String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([runId, createdAt])
+}
+
+// ══════════════════════════════════════════════════════════════
+// BANDO — core entity
+// ══════════════════════════════════════════════════════════════
+
+enum BandoStatus {
+  DRAFT // scraped, not yet AI-processed
+  OPEN
+  CLOSING_SOON
+  CLOSED
+  ARCHIVED
+}
+
+enum Category {
+  IMPRESE
+  PMI
+  STARTUP
+  ARTIGIANI
+  AGRICOLTURA
+  SPORT
+  COMUNI
+  ASSOCIAZIONI
+  TERZO_SETTORE
+  SCUOLE
+  UNIVERSITA
+  TURISMO
+  CULTURA
+  ENERGIA
+  DIGITALE
+  INNOVAZIONE
+  EXPORT
+  INTERNAZIONALIZZAZIONE
+  IMPIANTISTICA_SPORTIVA
+  PROTEZIONE_CIVILE
+  AMBIENTE
+  GIOVANI
+  ANZIANI
+  FAMIGLIE
+  DISABILITA
+  DSA
+  SANITA
+  MOBILITA
+  SICUREZZA
+  RICERCA
+  ALTRO
+}
+
+enum EntityType {
+  IMPRESA
+  PMI
+  STARTUP
+  LIBERO_PROFESSIONISTA
+  ASSOCIAZIONE
+  ENTE_PUBBLICO
+  COMUNE
+  SCUOLA
+  UNIVERSITA
+  ENTE_TERZO_SETTORE
+  PRIVATO_CITTADINO
+  COOPERATIVA
+  CONSORZIO
+  ALTRO
+}
+
+model Bando {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  status       BandoStatus @default(DRAFT)
+
+  // Provenance
+  sourceId     String
+  source       Source      @relation(fields: [sourceId], references: [id])
+  sourceUrl    String // canonical page of the bando
+  contentHash  String // for deduplication + change detection
+
+  // Core fields (AI-extracted, human-editable)
+  title        String
+  ente         String // publishing body
+  description  String?     @db.Text
+  summary      String?     @db.Text // plain-language AI summary
+
+  // Financials
+  importoTotale       Decimal? @db.Decimal(15, 2)
+  contributoMax       Decimal? @db.Decimal(15, 2)
+  percentualeFinanziabile Float?
+  currency            String   @default("EUR")
+
+  // Dates
+  publishedAt  DateTime?
+  opensAt      DateTime?
+  deadline     DateTime?
+
+  // Classification
+  categories   Category[]
+  beneficiari  EntityType[]
+  keywords     String[]
+  territorio   String? // FVG / comune / EU
+
+  // Structured detail (AI-extracted)
+  codice               String?
+  normativa            String?  @db.Text
+  contatti             Json?
+  obiettivi            String[] @default([])
+  vincoli              String[] @default([])
+  documentazioneRichiesta String[] @default([])
+  speseAmmissibili     String[] @default([])
+  speseEscluse         String[] @default([])
+  tempistiche          String?  @db.Text
+  procedura            String?  @db.Text
+  valutazione          String?  @db.Text
+
+  // AI insight bundle (see AiInsight)
+  aiInsight    AiInsight?
+
+  // Full-text search vector maintained by DB trigger / raw SQL
+  searchText   String?     @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents    BandoDocument[]
+  versions     BandoVersion[]
+  favorites    Favorite[]
+  comments     Comment[]
+  reminders    Reminder[]
+  tags         BandoTag[]
+  notifications Notification[]
+
+  @@index([status])
+  @@index([deadline])
+  @@index([ente])
+  @@index([sourceId])
+  @@index([publishedAt])
+}
+
+enum DocumentType {
+  PDF
+  DOC
+  XLS
+  HTML
+  ALTRO
+}
+
+model BandoDocument {
+  id           String       @id @default(cuid())
+  bandoId      String
+  bando        Bando        @relation(fields: [bandoId], references: [id], onDelete: Cascade)
+  type         DocumentType
+  url          String
+  filename     String?
+  sizeBytes    Int?
+  extractedText String?     @db.Text
+  ocrApplied   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+
+  @@index([bandoId])
+}
+
+// Immutable history for versioning / change tracking
+model BandoVersion {
+  id        String   @id @default(cuid())
+  bandoId   String
+  bando     Bando    @relation(fields: [bandoId], references: [id], onDelete: Cascade)
+  version   Int
+  snapshot  Json // full serialized bando at this version
+  diff      Json? // computed diff vs previous version
+  reason    String? // "crawl-update", "admin-edit", ...
+  createdAt DateTime @default(now())
+
+  @@unique([bandoId, version])
+  @@index([bandoId])
+}
+
+// ══════════════════════════════════════════════════════════════
+// AI INSIGHT — the "Area AI" bundle per bando
+// ══════════════════════════════════════════════════════════════
+
+model AiInsight {
+  id                String   @id @default(cuid())
+  bandoId           String   @unique
+  bando             Bando    @relation(fields: [bandoId], references: [id], onDelete: Cascade)
+
+  plainSummary      String   @db.Text // "spiegalo come se avessi 14 anni"
+  keyPoints         String[]
+  checklist         Json // [{label, required, done}]
+  faq               Json // [{q, a}]
+  mistakesToAvoid   String[]
+  successProbability Float? // 0..1 heuristic
+  practicalAdvice   String[]
+  timeline          Json // [{label, date, note}]
+  requiredDocs      String[]
+
+  model             String // model used for generation
+  generatedAt       DateTime @default(now())
+}
+
+// ══════════════════════════════════════════════════════════════
+// USER FEATURES — favorites, searches, tags, comments, reminders
+// ══════════════════════════════════════════════════════════════
+
+model Favorite {
+  id      String @id @default(cuid())
+  userId  String
+  bandoId String
+  note    String?
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bando   Bando  @relation(fields: [bandoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, bandoId])
+  @@index([userId])
+}
+
+model SavedSearch {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  query      Json // serialized filters
+  notify     Boolean  @default(true) // alert on new matches
+  lastNotifiedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Tag {
+  id     String     @id @default(cuid())
+  slug   String     @unique
+  label  String
+  color  String?
+  bandi  BandoTag[]
+}
+
+model BandoTag {
+  bandoId String
+  tagId   String
+  bando   Bando @relation(fields: [bandoId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([bandoId, tagId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  bandoId   String
+  userId    String
+  body      String   @db.Text
+  bando     Bando    @relation(fields: [bandoId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bandoId])
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  userId    String
+  bandoId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bando     Bando    @relation(fields: [bandoId], references: [id], onDelete: Cascade)
+  remindAt  DateTime
+  sent      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([remindAt, sent])
+}
+
+// ══════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ══════════════════════════════════════════════════════════════
+
+enum ChannelType {
+  EMAIL
+  TELEGRAM
+  WHATSAPP
+  PUSH
+  DISCORD
+  SLACK
+  WEBHOOK
+}
+
+model NotificationChannel {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      ChannelType
+  target    String // chat id / webhook url / push subscription JSON
+  enabled   Boolean     @default(true)
+  verified  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+
+  @@index([userId])
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Notification {
+  id        String             @id @default(cuid())
+  userId    String
+  bandoId   String?
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bando     Bando?             @relation(fields: [bandoId], references: [id], onDelete: SetNull)
+  title     String
+  body      String             @db.Text
+  channel   ChannelType
+  status    NotificationStatus @default(PENDING)
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime           @default(now())
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+// ══════════════════════════════════════════════════════════════
+// ADMIN / OPS
+// ══════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String // e.g. "bando.update", "source.disable"
+  entity    String?
+  entityId  String?
+  ip        String?
+  userAgent String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([action, createdAt])
+  @@index([userId])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
