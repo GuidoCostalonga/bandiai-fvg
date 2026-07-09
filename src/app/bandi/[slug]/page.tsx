@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { BandoAssistant } from '@/components/bando-assistant'
+import { CompareButton } from '@/components/compare-button'
 import { formatCurrency, daysUntil } from '@/lib/utils'
 
 async function getBando(slug: string) {
@@ -153,6 +154,7 @@ export default async function BandoDetailPage({ params }: { params: Promise<{ sl
                 Vai al bando ufficiale <ExternalLink className="h-4 w-4" />
               </a>
             </Button>
+            <CompareButton slug={bando.slug} variant="full" />
             {insight?.successProbability != null && (
               <div className="rounded-lg bg-muted p-3 text-center">
                 <div className="text-2xl font-bold text-primary">{Math.round(insight.successProbability * 100)}%</div>

@@ -6,11 +6,15 @@ import { persist } from 'zustand/middleware'
  * preferences that should survive reloads. Server data lives in TanStack Query,
  * not here — this store is strictly ephemeral/UI concerns.
  */
+const MAX_COMPARE = 3
+
 interface UiState {
   commandPaletteOpen: boolean
-  compareIds: string[] // bandi selected for side-by-side comparison
+  /** Slugs of bandi selected for side-by-side comparison (max 3). */
+  compareSlugs: string[]
   setCommandPalette: (open: boolean) => void
-  toggleCompare: (id: string) => void
+  toggleCompare: (slug: string) => void
+  isComparing: (slug: string) => boolean
   clearCompare: () => void
 }
 
@@ -18,16 +22,22 @@ export const useUiStore = create<UiState>()(
   persist(
     (set, get) => ({
       commandPaletteOpen: false,
-      compareIds: [],
+      compareSlugs: [],
       setCommandPalette: (open) => set({ commandPaletteOpen: open }),
-      toggleCompare: (id) => {
-        const ids = get().compareIds
-        set({
-          compareIds: ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id].slice(-3),
-        })
+      toggleCompare: (slug) => {
+        const slugs = get().compareSlugs
+        if (slugs.includes(slug)) {
+          set({ compareSlugs: slugs.filter((x) => x !== slug) })
+        } else {
+          // Keep the most recent selections when exceeding the cap.
+          set({ compareSlugs: [...slugs, slug].slice(-MAX_COMPARE) })
+        }
       },
-      clearCompare: () => set({ compareIds: [] }),
+      isComparing: (slug) => get().compareSlugs.includes(slug),
+      clearCompare: () => set({ compareSlugs: [] }),
     }),
-    { name: 'bandiai-ui', partialize: (s) => ({ compareIds: s.compareIds }) },
+    { name: 'bandiai-ui', partialize: (s) => ({ compareSlugs: s.compareSlugs }) },
   ),
 )
+
+export const COMPARE_LIMIT = MAX_COMPARE

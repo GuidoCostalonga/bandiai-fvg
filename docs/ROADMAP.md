@@ -21,7 +21,8 @@ Legenda: ✅ fatto · 🟡 parziale (fondamenta pronte, da completare) · ⬜ pi
 
 ## Fase 3 — Prodotto avanzato ⬜
 - ⬜ Generazione documenti (bozza domanda, business plan, cronoprogramma, budget, PEC)
-- ⬜ Confronto tra bandi + cronologia modifiche visuale (diff versioni)
+- ✅ Confronto tra bandi (fino a 3 affiancati, evidenziazione del valore migliore)
+- ⬜ Cronologia modifiche visuale (diff versioni)
 - ⬜ Import/Export Excel/CSV/PDF, widget embeddabile
 - ⬜ Multi-lingua (IT/EN/SL per Interreg), commenti e condivisione social
 - ⬜ Sistema plugin per sorgenti di terze parti

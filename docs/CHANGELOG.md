@@ -6,6 +6,11 @@ Tutte le modifiche rilevanti a questo progetto. Formato ispirato a
 ## [Unreleased]
 
 ### Added
+- **Confronto tra bandi**: selezione fino a 3 bandi (store Zustand persistito),
+  barra flottante globale, pagina `/confronta` con tabella comparativa ed
+  evidenziazione del valore migliore per riga (contributo, dotazione, %, scadenza),
+  endpoint `GET /api/bandi/compare` con degradazione morbida, helper puro
+  `buildComparisonRows` con test unitari.
 - **Ricerca semantica** con pgvector: colonna `embedding vector(1536)`, modulo
   `src/lib/ai/embeddings.ts` (OpenAI-compatible), `src/lib/bandi/semantic.ts` con ranking
   per distanza coseno e filtri in-DB, endpoint `GET /api/search` con fallback automatico

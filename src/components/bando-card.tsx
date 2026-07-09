@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { CalendarClock, Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { CompareButton } from '@/components/compare-button'
 import { formatCurrency, daysUntil, truncate } from '@/lib/utils'
 
 export type BandoCardData = {
@@ -31,9 +32,12 @@ export function BandoCard({ bando }: { bando: BandoCardData }) {
       <CardHeader className="gap-2">
         <div className="flex items-start justify-between gap-2">
           <Badge variant={statusVariant[bando.status] ?? 'secondary'}>{bando.status}</Badge>
-          {bando.contributoMax != null && (
-            <span className="text-sm font-semibold text-primary">{formatCurrency(Number(bando.contributoMax))}</span>
-          )}
+          <div className="flex items-center gap-2">
+            {bando.contributoMax != null && (
+              <span className="text-sm font-semibold text-primary">{formatCurrency(Number(bando.contributoMax))}</span>
+            )}
+            <CompareButton slug={bando.slug} />
+          </div>
         </div>
         <Link href={`/bandi/${bando.slug}`} className="font-semibold leading-snug group-hover:text-primary">
           {bando.title}

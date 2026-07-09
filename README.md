@@ -27,6 +27,7 @@ riassume** e ti **avvisa** se è compatibile con il tuo profilo.
 | **Calendario** | Vista agenda + export **ICS** (Google/Apple/Outlook) |
 | **Profilo utente** | Categorie, territori, tipologia ente, budget, ATECO, forma giuridica |
 | **Admin** | Gestione sorgenti, log crawler, statistiche, ruoli |
+| **Confronto** | Confronto affiancato di 2-3 bandi con evidenziazione del valore migliore |
 | **Extra** | Preferiti, tag, commenti, versionamento, feed RSS, API REST + OpenAPI, PWA, SEO, health check |
 
 ---
