@@ -2,7 +2,7 @@ import pLimitDefault from './p-limit'
 import { prisma } from '@/lib/prisma'
 import { logger } from '@/lib/logger'
 import { env } from '@/lib/env'
-import { slugify } from '@/lib/utils'
+import { slugify } from '@/lib/hash'
 import { extractBando } from '@/lib/ai/extract'
 import { generateInsight } from '@/lib/ai/insight'
 import { fetchHttp, fetchBrowser } from './fetcher'
@@ -11,7 +11,7 @@ import { classify } from './dedup'
 import { notifyMatchingUsers } from '@/lib/notifications/matcher'
 import { setBandoEmbedding } from '@/lib/bandi/semantic'
 import type { DiscoveredItem } from './types'
-import type { Source } from '@prisma/client'
+import type { Prisma, Source } from '@prisma/client'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -28,7 +28,9 @@ export async function runCrawl(source: Source): Promise<{ runId: string }> {
     data: { sourceId: source.id, status: 'RUNNING' },
   })
   const log = (level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', message: string, meta?: Record<string, unknown>) =>
-    prisma.crawlLog.create({ data: { runId: run.id, level, message, meta: meta ?? undefined } })
+    prisma.crawlLog.create({
+      data: { runId: run.id, level, message, meta: (meta ?? undefined) as Prisma.InputJsonValue | undefined },
+    })
 
   const parser = getParser(source.parserKey)
   const fetchPage = source.usesJavascript || source.usesCloudflare ? fetchBrowser : fetchHttp

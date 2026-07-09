@@ -2,22 +2,20 @@
 # BandiAI FVG — multi-stage production image (Next.js standalone)
 # ─────────────────────────────────────────────────────────────
 FROM node:20-slim AS base
-ENV PNPM_HOME=/pnpm
-ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable
 WORKDIR /app
 
 # ── Dependencies ─────────────────────────────────────────────
 FROM base AS deps
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json* ./
 COPY prisma ./prisma
-RUN pnpm install --frozen-lockfile || pnpm install
+# node:20 ships npm 10, which runs install scripts (prisma/esbuild) normally.
+RUN npm ci || npm install
 
 # ── Build ────────────────────────────────────────────────────
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm prisma generate && pnpm build
+RUN npm run build
 
 # ── Runtime ──────────────────────────────────────────────────
 FROM node:20-slim AS runner

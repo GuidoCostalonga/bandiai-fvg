@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { contentHash, slugify, formatCurrency, daysUntil, truncate } from './utils'
+import { formatCurrency, daysUntil, truncate } from './utils'
+import { contentHash, slugify } from './hash'
 
 describe('contentHash', () => {
   it('is stable and whitespace-insensitive at the edges', () => {

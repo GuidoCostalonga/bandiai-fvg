@@ -32,10 +32,16 @@ function isMatch(
   profile: { categories: string[]; territories: string[]; entityTypes: string[]; budgetMin: number | null; budgetMax: number | null },
   bando: Bando,
 ): boolean {
-  const categoryHit =
-    profile.categories.length === 0 || bando.categories.some((c) => profile.categories.includes(c))
-  const entityHit =
-    profile.entityTypes.length === 0 || bando.beneficiari.some((b) => profile.entityTypes.includes(b))
+  // Relevance = the bando is about something the user cares about, expressed via
+  // categories and/or entity types. Only *specified* dimensions constrain the
+  // match; an unspecified dimension must NOT vacuously satisfy the OR (that would
+  // notify a category-only user about every bando).
+  const hasCat = profile.categories.length > 0
+  const hasEnt = profile.entityTypes.length > 0
+  const catMatch = hasCat && bando.categories.some((c) => profile.categories.includes(c))
+  const entMatch = hasEnt && bando.beneficiari.some((b) => profile.entityTypes.includes(b))
+  const relevant = !hasCat && !hasEnt ? true : catMatch || entMatch
+
   const territoryHit =
     profile.territories.length === 0 ||
     (bando.territorio ? profile.territories.some((t) => bando.territorio!.toLowerCase().includes(t.toLowerCase())) : true)
@@ -46,6 +52,5 @@ function isMatch(
     ((profile.budgetMin == null || importo >= profile.budgetMin) &&
       (profile.budgetMax == null || importo <= profile.budgetMax))
 
-  // A match requires category OR entity relevance, plus territory + budget fit.
-  return (categoryHit || entityHit) && territoryHit && budgetHit
+  return relevant && territoryHit && budgetHit
 }

@@ -61,7 +61,7 @@ services:
       context: .
       target: build # the build stage keeps full source + node_modules + tsx
     restart: unless-stopped
-    command: ['pnpm', 'worker']
+    command: ['npm', 'run', 'worker']
     depends_on:
       postgres:
         condition: service_healthy

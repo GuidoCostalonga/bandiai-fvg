@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { contentHash } from '@/lib/utils'
+import { contentHash } from '@/lib/hash'
 
 export type DedupResult =
   | { kind: 'new' }

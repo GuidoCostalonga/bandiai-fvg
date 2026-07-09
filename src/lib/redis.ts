@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis'
 import { env } from './env'
+import { logger } from './logger'
 
 const globalForRedis = globalThis as unknown as {
   redis: Redis | undefined
@@ -9,12 +10,20 @@ const globalForRedis = globalThis as unknown as {
  * Shared ioredis connection used for caching. BullMQ creates its own
  * connections (it requires `maxRetriesPerRequest: null`), see queue/index.ts.
  */
-export const redis =
-  globalForRedis.redis ??
-  new Redis(env.REDIS_URL, {
+function createRedis(): Redis {
+  const client = new Redis(env.REDIS_URL, {
     lazyConnect: true,
     maxRetriesPerRequest: 3,
+    // Bounded backoff so an unreachable Redis doesn't spam reconnects forever.
+    retryStrategy: (times) => (times > 10 ? null : Math.min(times * 200, 2000)),
   })
+  // Without an 'error' listener ioredis logs "Unhandled error event" on every
+  // failed connection attempt. Degrade quietly — callers already fail open.
+  client.on('error', (err) => logger.debug('redis connection error', { err: err.message }))
+  return client
+}
+
+export const redis = globalForRedis.redis ?? createRedis()
 
 if (process.env.NODE_ENV !== 'production') globalForRedis.redis = redis
 

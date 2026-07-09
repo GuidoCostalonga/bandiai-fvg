@@ -1,12 +1,14 @@
 import { Queue } from 'bullmq'
 import { Redis } from 'ioredis'
 import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
 
 /**
  * BullMQ requires a dedicated connection with `maxRetriesPerRequest: null`.
  * We keep queue connections separate from the app cache connection (redis.ts).
  */
 export const connection = new Redis(env.REDIS_URL, { maxRetriesPerRequest: null })
+connection.on('error', (err) => logger.debug('bullmq redis error', { err: err.message }))
 
 export const QUEUES = {
   crawl: 'crawl',

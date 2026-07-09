@@ -1,30 +1,13 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import { createHash } from 'node:crypto'
 
 /** Tailwind-aware className merge (shadcn/ui convention). */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/** Deterministic content hash for deduplication + change detection. */
-export function contentHash(input: string): string {
-  return createHash('sha256').update(input.trim()).digest('hex')
-}
-
-/** URL-safe slug, collision-resistant via short hash suffix. */
-export function slugify(text: string, salt?: string): string {
-  const base = text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // strip combining diacritics after NFD
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '')
-    .slice(0, 80)
-  if (!salt) return base
-  const suffix = createHash('sha1').update(salt).digest('hex').slice(0, 6)
-  return `${base}-${suffix}`
-}
+// Note: hashing/slug helpers live in `@/lib/hash` (server-only) because this
+// module is bundled for the client and `node:crypto` isn't available there.
 
 const eur = new Intl.NumberFormat('it-IT', {
   style: 'currency',

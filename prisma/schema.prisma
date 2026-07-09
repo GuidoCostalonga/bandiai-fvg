@@ -48,7 +48,6 @@ model User {
   comments      Comment[]
   auditLogs     AuditLog[]
   reminders     Reminder[]
-  aiThreads     AiThread[]
 
   @@index([role])
 }

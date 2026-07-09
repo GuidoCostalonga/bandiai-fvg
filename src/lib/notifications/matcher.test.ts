@@ -6,8 +6,11 @@ function isMatch(
   profile: { categories: string[]; territories: string[]; entityTypes: string[]; budgetMin: number | null; budgetMax: number | null },
   bando: { categories: string[]; beneficiari: string[]; territorio: string | null; contributoMax: number | null },
 ): boolean {
-  const categoryHit = profile.categories.length === 0 || bando.categories.some((c) => profile.categories.includes(c))
-  const entityHit = profile.entityTypes.length === 0 || bando.beneficiari.some((b) => profile.entityTypes.includes(b))
+  const hasCat = profile.categories.length > 0
+  const hasEnt = profile.entityTypes.length > 0
+  const catMatch = hasCat && bando.categories.some((c) => profile.categories.includes(c))
+  const entMatch = hasEnt && bando.beneficiari.some((b) => profile.entityTypes.includes(b))
+  const relevant = !hasCat && !hasEnt ? true : catMatch || entMatch
   const territoryHit =
     profile.territories.length === 0 ||
     (bando.territorio ? profile.territories.some((t) => bando.territorio!.toLowerCase().includes(t.toLowerCase())) : true)
@@ -15,7 +18,7 @@ function isMatch(
   const budgetHit =
     importo == null ||
     ((profile.budgetMin == null || importo >= profile.budgetMin) && (profile.budgetMax == null || importo <= profile.budgetMax))
-  return (categoryHit || entityHit) && territoryHit && budgetHit
+  return relevant && territoryHit && budgetHit
 }
 
 const emptyProfile = { categories: [], territories: [], entityTypes: [], budgetMin: null, budgetMax: null }
